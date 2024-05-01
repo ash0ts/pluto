@@ -6,7 +6,6 @@ import json
 import math
 import uuid
 from tqdm import tqdm
-from .posthog.events import capture_event
 from .prompts import SAMPLE_GENERATION_PROMPT
 from .topic_tree import TopicTree
 from .dataset import Dataset
@@ -37,7 +36,6 @@ class DataEngine(weave.Model):
     @weave.op()
     def create_data(self, model_name: str, num_steps: int = None, num_example_demonstrations: int = 3, batch_size: int = 10, topic_tree : TopicTree = None):
         creation_id = uuid.uuid4()
-        capture_event("create-data", dict(model_name=model_name, num_steps=num_steps, num_example_demonstrations=num_example_demonstrations, batch_size=batch_size, topic_tree_exists=(topic_tree is not None), creation_id=creation_id))
         data_creation_prompt = self.sample_generation_prompt
 
         if self.args.example_data is None:
@@ -115,7 +113,6 @@ class DataEngine(weave.Model):
                     if j == 2:
                         raise Exception(f"{j} consecutive errors generating training examples. Something's probably wrong.")
 
-        capture_event("create-data-finished", dict(creation_id=creation_id))
         return self.dataset
 
     @weave.op()
@@ -127,7 +124,6 @@ class DataEngine(weave.Model):
         prompt = prompt.replace("{{{{subtopics}}}}", self.build_subtopics_text(subtopics_list))
 
         return prompt
-
 
     @weave.op()
     def save_dataset(self, save_path):

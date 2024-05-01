@@ -5,7 +5,6 @@ import uuid
 from typing import List
 from .utils import extract_list
 from .prompts import TREE_GENERATION_PROMPT
-from .posthog.events import capture_event
 import weave
 
 class TopicTreeArguments(BaseModel):
@@ -30,9 +29,7 @@ class TopicTree(weave.Model):
     @weave.op()
     def build_tree(self, model_name: str = "gpt-3.5-turbo-0125"):
         build_id = uuid.uuid4()
-        capture_event("build-tree", dict(model=model_name, tree_degree=self.args.tree_degree, tree_depth=self.args.tree_depth, build_id=build_id))
         self.tree_paths = self.build_subtree(model_name, [self.args.root_prompt], self.args.model_system_prompt, self.args.tree_degree, self.args.tree_depth)
-        capture_event("build-tree-finished", dict(build_id=build_id))
         return self.tree_paths
 
     @weave.op()
