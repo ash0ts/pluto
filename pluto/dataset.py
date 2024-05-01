@@ -56,8 +56,6 @@ class Dataset(BaseModel):
                 f.write(cleaned_sample+"\n")
         dataset = weave.Dataset(name=save_path, rows=samples)
         weave.publish(dataset)
-        
-        print(f"saved dataset to {save_path}. You can now upload and fine-tune models on multiple platforms:\n\nHaven: https://app.haven.run/\nOpenAI: https://platform.openai.com/finetune")
         return dataset
 
     # @weave.op()
