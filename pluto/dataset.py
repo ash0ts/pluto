@@ -1,9 +1,18 @@
-from typing import List, Dict
+from typing import List, Dict, ClassVar
 import json
 from .utils import remove_linebreaks_and_spaces
+from pydantic import BaseModel
+import weave
 
-class Dataset:
+class Dataset(BaseModel):
+    samples: List[Dict] = []
+
+    class Config:
+        arbitrary_types_allowed = True
+        extra = "ignore"
+
     def __init__(self):
+        super().__init__()
         self.samples = []
 
     @classmethod
@@ -27,7 +36,7 @@ class Dataset:
         return instance
 
     @classmethod
-    def validate_sample(self, sample: Dict):
+    def validate_sample(cls, sample: Dict):
         if 'messages' not in sample:
             return False
         for message in sample['messages']:
@@ -37,20 +46,26 @@ class Dataset:
                 return False
         return True
 
-    def save(self, save_path):
+    # @weave.op()
+    def save(self, save_path: str):
+        samples = []
         with open(save_path, "w") as f:
             for sample in self.samples:
-                f.write(remove_linebreaks_and_spaces(json.dumps(sample))+"\n")
+                cleaned_sample = remove_linebreaks_and_spaces(json.dumps(sample))
+                samples.append(json.loads(cleaned_sample))
+                f.write(cleaned_sample+"\n")
+        dataset = weave.Dataset(name=save_path, rows=samples)
+        weave.publish(dataset)
         
         print(f"saved dataset to {save_path}. You can now upload and fine-tune models on multiple platforms:\n\nHaven: https://app.haven.run/\nOpenAI: https://platform.openai.com/finetune")
-    
+        return dataset
+
+    # @weave.op()
     def add_samples(self, samples: List[Dict]):
+        sample_additions = []
         for sample in samples:
             if self.validate_sample(sample):
-                self.samples.append(sample)
+                sample_additions.append(sample)
             else:
                 print("Invalid sample, not added:", sample)
-
-
-
-    
+        self.samples.extend(sample_additions)

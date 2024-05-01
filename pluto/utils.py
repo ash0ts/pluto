@@ -37,5 +37,3 @@ def remove_linebreaks_and_spaces(input_string):
     no_spaces = ' '.join(no_linebreaks.split())
 
     return no_spaces
-
-

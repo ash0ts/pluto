@@ -1,0 +1,9 @@
+.venv
+.env
+.DS_Store
+*.egg-info
+dist/
+build/
+**/__pycache__
+numpy_topictree.jsonl
+output_with_topictree.jsonl

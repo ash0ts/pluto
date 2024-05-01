@@ -11,19 +11,29 @@ from .posthog.events import capture_event
 from .prompts import SAMPLE_GENERATION_PROMPT
 from .topic_tree import TopicTree
 from .dataset import Dataset
+from pydantic import BaseModel
+import weave
 
-@dataclass
-class EngineArguments:
+class EngineArguments(BaseModel):
     instructions: str
     system_prompt: str
     example_data: Dataset = None
 
 
-class DataEngine:
+class DataEngine(weave.Model):
+
+    args: EngineArguments = None
+    dataset: Dataset = None
+
+    class Config:
+        arbitrary_types_allowed = True
+    
     def __init__(self, args: EngineArguments):
+        super().__init__()
         self.args = args
         self.dataset = Dataset()
 
+    @weave.op()
     def create_data(self, model_name: str, num_steps: int = None, num_example_demonstrations: int = 3, batch_size: int = 10, topic_tree : TopicTree = None):
         creation_id = uuid.uuid4()
         capture_event("create-data", dict(model_name=model_name, num_steps=num_steps, num_example_demonstrations=num_example_demonstrations, batch_size=batch_size, topic_tree_exists=(topic_tree is not None), creation_id=creation_id))
@@ -69,13 +79,25 @@ class DataEngine:
             
             for j in range(3):
                 try:
-                    responses = litellm.batch_completion(
-                        model=model_name,
-                        messages=[[{"role": "user", "content": p}] for p in prompts],
-                        temperature=1.0,
-                        response_format={"type": "json_object"},
-                        max_retries=10
-                    )
+                    responses = []
+                    for prompt in prompts:
+                        response = litellm.completion(
+                            model=model_name,
+                            messages=[{"role": "user", "content": prompt}],
+                            temperature=1.0,
+                            response_format={"type": "json_object"},
+                            max_retries=10
+                        )
+                        responses.append(response)
+                    
+                    # BUG: Issue with weave.init not being inited here. Want to support async
+                    # responses = litellm.batch_completion(
+                    #     model=model_name,
+                    #     messages=[[{"role": "user", "content": p}] for p in prompts],
+                    #     temperature=1.0,
+                    #     response_format={"type": "json_object"},
+                    #     max_retries=10
+                    # )
                     
                     samples = [json.loads(r.choices[0].message.content) for r in responses]
                     for sample in samples:
@@ -95,7 +117,7 @@ class DataEngine:
         capture_event("create-data-finished", dict(creation_id=creation_id))
         return self.dataset
 
-
+    @weave.op()
     def build_prompt(self, data_creation_prompt: str, model_name: str, num_example_demonstrations: int, subtopics_list: List[List[str]] = None):
 
         prompt = data_creation_prompt.replace("{{{{system_prompt}}}}", self.build_system_prompt())
@@ -106,21 +128,22 @@ class DataEngine:
         return prompt
 
 
+    @weave.op()
     def save_dataset(self, save_path):
         self.dataset.save(save_path)
 
-
+    @weave.op()
     def build_custom_instructions_text(self) -> str:    
         if self.args.instructions is None:
             return ""
         else:
             return f"\nHere are additional instructions:\n<instructions>\n{self.args.instructions}\n</instructions>\n"
 
-
+    @weave.op()
     def build_system_prompt(self):
         return self.args.system_prompt
 
-
+    @weave.op()
     def build_examples_text(self, num_example_demonstrations: int ):
         if self.args.example_data is None:
             return ""
@@ -136,12 +159,9 @@ class DataEngine:
 
             return f"\nHere are output examples:\n<examples>\n{examples_text}\n</examples>\n"
         
-
+    @weave.op()
     def build_subtopics_text(self, subtopic_list: List[str]):
         if subtopic_list is None:
             return ""
         else:
             return f"\nLastly, the topic of the training data should be related to the following subtopics: {' -> '.join(subtopic_list)}"
-
-
-
