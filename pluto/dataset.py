@@ -1,4 +1,4 @@
-from typing import List, Dict, ClassVar
+from typing import List, Dict
 import json
 from .utils import remove_linebreaks_and_spaces
 from pydantic import BaseModel

@@ -2,7 +2,7 @@ from pydantic import BaseModel, Field
 import litellm
 import json
 import uuid
-from typing import List, Optional
+from typing import List
 from .utils import extract_list
 from .prompts import TREE_GENERATION_PROMPT
 from .posthog.events import capture_event
@@ -17,6 +17,7 @@ class TopicTreeArguments(BaseModel):
 class TopicTree(weave.Model):
     args: TopicTreeArguments = None
     tree_paths: List[List[str]] = []
+    tree_generation_prompt: str = TREE_GENERATION_PROMPT
 
     class Config:
         arbitrary_types_allowed = True
@@ -49,7 +50,7 @@ class TopicTree(weave.Model):
 
     @weave.op()
     def get_subtopics(self, system_prompt: str, node_path: List[str], num_subtopics: int, model_name: str) -> List[str]:
-        prompt = TREE_GENERATION_PROMPT
+        prompt = self.tree_generation_prompt
 
         prompt = prompt.replace("{{{{system_prompt}}}}", system_prompt)
         prompt = prompt.replace("{{{{subtopics_list}}}}", ' -> '.join(node_path))
