@@ -19,7 +19,7 @@ def run_synthetic_data_gen():
         )
     )
 
-    tree.build_tree(model_name="gpt-3.5-turbo-0125")
+    tree.build_tree(model_name="claude-3-sonnet-20240229")
     tree.save("numpy_topictree.jsonl")
 
     engine = DataEngine(
