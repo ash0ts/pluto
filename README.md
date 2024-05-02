@@ -123,13 +123,3 @@ You can directly use these dataset files to fine-tune models with Haven ([docs](
 
 
 <br>
-
-
-## Telemetry
-
-We use [Posthog](https://github.com/PostHog/posthog) to collect **anonymous** data about how people use Pluto. Concretely, we log whenever a data / topic tree creation job is started and ended. **We do not collect any contents of your datasets**.
-
-You can simply disable telemetry by setting the environment variable `ANONYMIZED_TELEMETRY` to `False`:
-```
-export ANONYMIZED_TELEMETRY=False
-```
