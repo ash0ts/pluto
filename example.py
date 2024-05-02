@@ -4,7 +4,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 import weave
-weave.init("synthetic-data-gen-test")
+weave.init("synthetic-data-gen-numpy-questions")
 
 @weave.op()
 def run_synthetic_data_gen():
